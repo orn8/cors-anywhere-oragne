@@ -1,27 +1,5 @@
 <body>
-
-  One pager app which shows plain html of MDN site:
+  To use this CORS-Anywhere implementation, use the URL structure as the following:
   
-  
-  <div id="page"> </div>
-
-  <script>
-    
-    async function fetchPage() {
-      
-      let externalPage = 'api/cors?url=https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS';
-
-      let page = await fetch(externalPage);
-      let page_ = await page.text();
-      let pg = document.getElementById("page");
-      
-      pg.innerHTML = page_;
-
-    }
-
-    fetchPage();
-    
-  </script>
-
-
-</body>
+  <b>https://cors-anywhere-oragne.vercel.app/api/cors?url=</b>[your url]
+  </body>
