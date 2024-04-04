@@ -12,6 +12,7 @@ export default async function handler(request, response) {
   const { status, data } = await getRequest(url);
   
   response.setHeader('Access-Control-Allow-Origin', '*');
+  response.setHeader('Access-Control-Allow-Headers', '*');
   response.status(status).send(data);
 
   function getRequest(url) {
