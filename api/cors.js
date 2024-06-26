@@ -3,12 +3,16 @@ export default async function handler(request, response) {
 
   let url = request.query.url;
 
-  const { status, data } = await getRequest(url);
+  const { status, data, contentType } = await getRequest(url);
 
   response.setHeader('Access-Control-Allow-Origin', '*');
   response.setHeader('Access-Control-Allow-Headers', '*');
-  
+
   if (status === 200) {
+    if (contentType && contentType.startsWith('application/octet-stream')) {
+      response.setHeader('Content-Type', contentType);
+      response.setHeader('Content-Disposition', 'attachment');
+    }
     response.status(status).send(data);
   } else {
     response.status(status).send({ error: 'Failed to fetch data' });
@@ -18,26 +22,28 @@ export default async function handler(request, response) {
     return new Promise(resolve => {
       const req = https.get(url, (resp) => {
         let data = '';
+        let contentType = resp.headers['content-type'];
 
         if (resp.statusCode >= 300 && resp.statusCode < 400 && resp.headers.location) {
           return resolve(getRequest(resp.headers.location));
         }
 
-        const contentType = resp.headers['content-type'];
-        if (!contentType || !contentType.startsWith('application/octet-stream')) {
-          let errorData = '';
+        if (contentType && contentType.startsWith('application/octet-stream')) {
+          const chunks = [];
           resp.on('data', (chunk) => {
-            errorData += chunk;
+            chunks.push(chunk);
           });
           resp.on('end', () => {
-            resolve({ status: resp.statusCode, data: errorData });
+            data = Buffer.concat(chunks);
+            resolve({ status: resp.statusCode, data: data, contentType: contentType });
           });
         } else {
+          resp.setEncoding('utf8');
           resp.on('data', (chunk) => {
             data += chunk;
           });
           resp.on('end', () => {
-            resolve({ status: resp.statusCode, data: data });
+            resolve({ status: resp.statusCode, data: data, contentType: contentType });
           });
         }
       });
@@ -47,6 +53,6 @@ export default async function handler(request, response) {
       });
 
       req.end();
-    }); 
+    });
   }
 }
