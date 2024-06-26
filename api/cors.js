@@ -1,42 +1,31 @@
 export default async function handler(request, response) {
   const https = require('https');
 
+  let query = Object.entries(request.query);
+  query.shift();
   let url = request.query.url;
-
-  const { status, data, contentType } = await getRequest(url);
-
+  
+  query.forEach(entry => {
+    url += '&' + entry[0] + '=' + entry[1];
+  });
+  
+  const { status, data } = await getRequest(url);
+  
   response.setHeader('Access-Control-Allow-Origin', '*');
   response.setHeader('Access-Control-Allow-Headers', '*');
-  
-  if (contentType && contentType.startsWith('text/html')) {
-    data = stripHtmlTags(data);
-  }
-
   response.status(status).send(data);
 
   function getRequest(url) {
     return new Promise(resolve => {
       const req = https.get(url, (resp) => {
         let data = '';
-        let contentType = resp.headers['content-type'];
-
         resp.on('data', (chunk) => {
           data += chunk;
         });
         resp.on('end', () => {
-          resolve({ status: resp.statusCode, data: data, contentType: contentType });
+          resolve({ status: resp.statusCode, data: data });
         });
       });
-
-      req.on('error', (err) => {
-        resolve({ status: 500, data: err.message, contentType: null });
-      });
-
-      req.end();
     }); 
-  }
-
-  function stripHtmlTags(html) {
-    return html.replace(/<\/?([a-z][a-z0-9]*)\b[^>]*>?/gi, '');
   }
 }
