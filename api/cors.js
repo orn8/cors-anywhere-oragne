@@ -3,44 +3,34 @@ export default async function handler(request, response) {
 
   let url = request.query.url;
 
-  try {
-    const { status, data, contentType } = await getRequest(url);
+  const { status, data } = await getRequest(url);
 
-    response.setHeader('Access-Control-Allow-Origin', '*');
-    response.setHeader('Access-Control-Allow-Headers', '*');
-    response.setHeader('Content-Type', contentType);
-    response.status(status);
-
-    if (contentType && contentType.startsWith('application')) {
-      response.setHeader('Content-Disposition', 'attachment');
-    }
-
-    response.send(data);
-  } catch (error) {
-    console.error('Error fetching data:', error.message);
-    response.status(500).send('Error fetching data');
-  }
+  response.setHeader('Access-Control-Allow-Origin', '*');
+  response.setHeader('Access-Control-Allow-Headers', '*');
+  response.status(status).send(data);
 
   function getRequest(url) {
-    return new Promise((resolve, reject) => {
+    return new Promise(resolve => {
       const req = https.get(url, (resp) => {
-        const contentType = resp.headers['content-type'];
-        let data = Buffer.alloc(0);
+        let data = '';
+
+        if (resp.statusCode >= 300 && resp.statusCode < 400 && resp.headers.location) {
+          return resolve(getRequest(resp.headers.location));
+        }
 
         resp.on('data', (chunk) => {
-          data = Buffer.concat([data, chunk]);
+          data += chunk;
         });
-
         resp.on('end', () => {
-          resolve({ status: resp.statusCode, data: data, contentType: contentType });
+          resolve({ status: resp.statusCode, data: data });
         });
       });
 
       req.on('error', (err) => {
-        reject(new Error(`Request failed: ${err.message}`));
+        resolve({ status: 500, data: err.message });
       });
 
       req.end();
-    });
+    }); 
   }
 }
