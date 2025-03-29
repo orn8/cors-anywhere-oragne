@@ -7,7 +7,7 @@ module.exports = async function handler(request, response) {
     'https://vanishgames.oragne.dev'
   ];
 
-  const origin = request.headers.origin;
+  const origin = request.headers.origin || request.headers.referer || request.headers.host || 'Unknown';
 
   // Check if origin is allowed
   if (!allowedOrigins.includes(origin)) {
