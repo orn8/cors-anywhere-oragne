@@ -1,6 +1,5 @@
 const axios = require('axios');
 const cheerio = require('cheerio');
-const https = require('https');
 
 module.exports = async function handler(request, response) {
   // Allowed origins for CORS
@@ -21,7 +20,7 @@ module.exports = async function handler(request, response) {
 
   // Handle preflight OPTIONS request
   if (request.method === 'OPTIONS') {
-    response.setHeader('Access-Control-Allow-Origin', origin)
+    response.setHeader('Access-Control-Allow-Origin', origin);
     response.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     response.setHeader('Access-Control-Allow-Headers', '*');
     return response.status(200).end(); // Respond with a 200 OK for OPTIONS request
@@ -39,8 +38,8 @@ module.exports = async function handler(request, response) {
     const parsedUrl = new URL(url);
     const baseUrl = `${parsedUrl.protocol}//${parsedUrl.hostname}`;
 
-    // Fetch the content from the external URL
-    const { status, data } = await getRequest(url);
+    // Fetch the content from the external URL using Axios
+    const { status, data } = await axios.get(url, { timeout: 5000 }); // 5s timeout
 
     if (status !== 200) {
       return response.status(status).send(data);
@@ -54,49 +53,46 @@ module.exports = async function handler(request, response) {
       const attrName = $(el).attr('src') ? 'src' : 'href';
       const attrValue = $(el).attr(attrName);
 
-      if (attrValue && attrValue.startsWith('/')) {
-        // Convert relative URL to absolute
-        const newUrl = baseUrl + attrValue;
-        $(el).attr(attrName, newUrl);
+      if (attrValue) {
+        if (attrValue.startsWith('/')) {
+          // Convert relative URL to absolute
+          const newUrl = baseUrl + attrValue;
+          $(el).attr(attrName, newUrl);
+        } else if (attrValue.startsWith('//')) {
+          // Handle protocol-relative URLs
+          const newUrl = parsedUrl.protocol + attrValue; // Use the same protocol as the current page
+          $(el).attr(attrName, newUrl);
+        }
       }
     });
 
     // Remove ads
     $('iframe, script').each((i, el) => {
       const src = $(el).attr('src');
-      if (src && src.includes('ads')) {
+      if (src && /(ads|doubleclick|googlesyndication|adservice|tracking|banners)/i.test(src)) {
         $(el).remove(); // Remove elements with 'ads' in the src
       }
     });
 
-    $('.ad-class, .ads').each((i, el) => {
+    // Remove known ad classes or inline ads
+    $('[class*="ad"], [id*="ad"], div:contains("advertisement")').each((i, el) => {
       $(el).remove(); // Remove elements with these ad classes
     });
 
-    // Send back the modified HTML with corrected asset paths
+    // Fix inline CSS for asset paths (like images, fonts)
+    $('style').each((i, el) => {
+      let css = $(el).html();
+      css = css.replace(/url\(['"]?(\/[^)'"]+)['"]?\)/g, `url(${baseUrl}$1)`);
+      $(el).html(css);
+    });
+
+    // Set response headers and send the modified HTML back
     response.setHeader('Content-Type', 'text/html');
+    response.setHeader('Cache-Control', 's-maxage=3600, stale-while-revalidate');
+    response.setHeader('Content-Encoding', 'gzip'); // Compress response for faster loading
     response.status(200).send($.html());
 
   } catch (error) {
     response.status(500).json({ error: 'Error fetching or processing content' });
-  }
-
-  // Function to make the HTTPS request to fetch content
-  function getRequest(url) {
-    return new Promise(resolve => {
-      const req = https.get(url, (resp) => {
-        let data = '';
-        resp.on('data', (chunk) => {
-          data += chunk;
-        });
-        resp.on('end', () => {
-          resolve({ status: resp.statusCode, data: data });
-        });
-      });
-
-      req.on('error', (err) => {
-        resolve({ status: 500, data: err.message });
-      });
-    });
   }
 }

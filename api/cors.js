@@ -50,10 +50,16 @@ module.exports = async function handler(request, response) {
       const attrName = $(el).attr('src') ? 'src' : 'href';
       const attrValue = $(el).attr(attrName);
 
-      if (attrValue && attrValue.startsWith('/')) {
-        // Convert relative URL to absolute
-        const newUrl = baseUrl + attrValue;
-        $(el).attr(attrName, newUrl);
+      if (attrValue) {
+        if (attrValue.startsWith('/')) {
+          // Convert relative URL to absolute
+          const newUrl = baseUrl + attrValue;
+          $(el).attr(attrName, newUrl);
+        } else if (attrValue.startsWith('//')) {
+          // Handle protocol-relative URLs
+          const newUrl = parsedUrl.protocol + attrValue; // Use the same protocol as the current page
+          $(el).attr(attrName, newUrl);
+        }
       }
     });
 
