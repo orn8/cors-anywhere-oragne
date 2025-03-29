@@ -1,5 +1,5 @@
-import axios from 'axios';
-import cheerio from 'cheerio';
+const axios = require('axios');
+const cheerio = require('cheerio');
 
 export default async function handler(request, response) {
   const https = require('https');
@@ -11,8 +11,6 @@ export default async function handler(request, response) {
 
   const origin = request.headers.origin;
 
-  // Debugging: Log the incoming request's origin
-  console.log("Request Origin:", origin);
 /*
   // Check if the origin is allowed
   if (!allowedOrigins.includes(origin)) {
@@ -39,9 +37,6 @@ export default async function handler(request, response) {
   try {
     // Fetch the content from the external URL
     const { status, data } = await getRequest(url);
-
-    // Debugging: Log the status of the response from the external URL
-    console.log("External Request Status:", status);
 
     if (status !== 200) {
       return response.status(status).send(data);
