@@ -14,7 +14,7 @@ export default async function handler(request, response) {
   }
 
   // Set CORS headers
-  response.setHeader('Access-Control-Allow-Origin', origin);
+  response.setHeader('Access-Control-Allow-Origin', '*');
   response.setHeader('Access-Control-Allow-Headers', '*');
 
   // Build the final URL with query parameters
