@@ -9,11 +9,12 @@ module.exports = async function handler(request, response) {
   ];
 
   const origin = request.headers.origin;
-
+/*
   // Check if the origin is allowed
   if (!allowedOrigins.includes(origin)) {
     return response.status(403).send('Forbidden: Access is denied.');
-  }
+  }*/
+ 
   // Handle preflight OPTIONS request
   if (request.method === 'OPTIONS') {
     response.setHeader('Access-Control-Allow-Origin', '*');
