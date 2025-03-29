@@ -1,0 +1,14 @@
+{
+  "name": "oragne-proxies",
+  "version": "1.0.0",
+  "license": "ISC",
+  "main": "index.js",
+  "type": "commonjs",
+  "dependencies": {
+    "axios": "^0.21.1",
+    "cheerio": "^1.0.0-rc.5"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  }
+}
