@@ -5,16 +5,17 @@ const https = require('https');
 module.exports = async function handler(request, response) {
   // Allowed origins for CORS
   const allowedOrigins = [
-    'https://vanishgames.oragne.dev'
+    'https://vanishgames.oragne.dev/'
   ];
 
   const origin = request.headers.origin;
-/*
+
+  /*
   // Check if the origin is allowed
   if (!allowedOrigins.includes(origin)) {
     return response.status(403).send('Forbidden: Access is denied.');
   }*/
- 
+
   // Handle preflight OPTIONS request
   if (request.method === 'OPTIONS') {
     response.setHeader('Access-Control-Allow-Origin', '*');
@@ -31,8 +32,12 @@ module.exports = async function handler(request, response) {
   let url = request.query.url;
 
   try {
-    // Fetch the content from the external URL
-    const { status, data } = await getRequest(url);
+    // Parse the URL to extract hostname
+    const parsedUrl = new URL(url);
+    const targetHost = parsedUrl.hostname;
+
+    // Fetch the content from the external URL with a spoofed Host header
+    const { status, data } = await getRequest(url, targetHost);
 
     if (status !== 200) {
       return response.status(status).send(data);
@@ -70,10 +75,17 @@ module.exports = async function handler(request, response) {
     response.status(500).json({ error: 'Error fetching or processing content' });
   }
 
-  // Function to make the HTTPS request to fetch content
-  function getRequest(url) {
+  // Function to make the HTTPS request to fetch content with a spoofed Host header
+  function getRequest(url, spoofedHost) {
     return new Promise(resolve => {
-      const req = https.get(url, (resp) => {
+      const options = {
+        headers: {
+          'Host': spoofedHost, // Spoofed Host header
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        }
+      };
+
+      const req = https.get(url, options, (resp) => {
         let data = '';
         resp.on('data', (chunk) => {
           data += chunk;
@@ -88,4 +100,4 @@ module.exports = async function handler(request, response) {
       });
     });
   }
-}
+};
