@@ -3,7 +3,9 @@ const cheerio = require('cheerio');
 
 module.exports = async function handler(request, response) {
   // Allowed origins for CORS
-  const allowedOrigins = ['https://vanishgames.oragne.dev'];
+  const allowedOrigins = [
+    'https://vanishgames.oragne.dev'
+  ];
 
   const origin = request.headers.origin;
 

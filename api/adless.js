@@ -5,14 +5,14 @@ const https = require('https');
 module.exports = async function handler(request, response) {
   // Allowed origins for CORS
   const allowedOrigins = [
-    'https://vanishgames.oragne.dev/'
+    'https://vanishgames.oragne.dev'
   ];
 
   const origin = request.headers.origin;
 
   // Check if the origin is allowed
   if (!allowedOrigins.includes(origin)) {
-    return response.status(403).send('Forbidden: Access is denied.');
+    return response.status(403).send(origin);
   }
 
   // Handle preflight OPTIONS request
