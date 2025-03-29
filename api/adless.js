@@ -8,11 +8,15 @@ module.exports = async function handler(request, response) {
     'https://vanishgames.oragne.dev'
   ];
 
+  // Get origin or referer or host
   const origin = request.headers.origin || request.headers.referer || request.headers.host || 'Unknown';
 
-  // Check if the origin is allowed
-  if (!allowedOrigins.includes(origin)) {
-    return response.status(403).send(origin);
+  // Normalise the origin by trimming any trailing slashes and converting to lowercase
+  const normalisedOrigin = origin.replace(/\/$/, '').toLowerCase();
+
+  // Check if the normalized origin is allowed
+  if (!allowedOrigins.some(allowedOrigin => allowedOrigin.toLowerCase() === normalisedOrigin)) {
+    return response.status(403).send('Forbidden: Access is denied.');
   }
 
   // Handle preflight OPTIONS request
