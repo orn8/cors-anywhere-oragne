@@ -12,7 +12,7 @@ module.exports = async function handler(request, response) {
 
   // Check if the origin is allowed
   if (!allowedOrigins.includes(origin)) {
-    return response.status(403).send('Forbidden: Access is denied.');
+    return response.status(403).send(origin);
   }
 
   // Handle preflight OPTIONS request
