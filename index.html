@@ -1,20 +1,131 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>CORS-Anywhere oragne</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>oragne-proxies</title>
   <style>
     body {
       font-family: "Roboto Mono", monospace;
+      margin: 0;
+      padding: 0;
+      background-color: #f5f5f5;
+      color: #333;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      text-align: center;
     }
+
+    .container {
+      background-color: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      width: 80%;
+      max-width: 600px;
+    }
+
+    h1 {
+      color: #f57c00;
+    }
+
+    .url-structure {
+      font-size: 1.2rem;
+      font-family: "Courier New", monospace;
+      color: #333;
+      background-color: #f1f1f1;
+      padding: 10px;
+      border-radius: 5px;
+      display: inline-block;
+      margin: 20px 0;
+      word-wrap: break-word;
+    }
+
     b {
-      color: orange;
+      color: #f57c00;
+    }
+
+    p {
+      line-height: 1.6;
+      font-size: 1rem;
+      color: #555;
+    }
+
+    .instruction {
+      background-color: #e0f7fa;
+      border-left: 4px solid #00bcd4;
+      padding: 10px;
+      font-size: 1rem;
+      color: #00796b;
+      margin-bottom: 20px;
+    }
+
+    .note {
+      font-size: 0.9rem;
+      color: #777;
+    }
+
+    .highlight {
+      color: #f57c00;
+      font-weight: bold;
+    }
+
+    .section {
+      margin-bottom: 30px;
+    }
+
+    .restriction {
+      background-color: #ffebee;
+      border-left: 4px solid #f44336;
+      padding: 15px;
+      font-size: 1rem;
+      color: #d32f2f;
+      margin-bottom: 20px;
     }
   </style>
 </head>
 <body>
-  To use this CORS-Anywhere implementation, use the following URL structure:
-  <br>
-  <br>
-  <b>https://cors-anywhere-orn8.vercel.app/api/cors?url=</b>[your url]
+  <div class="container">
+    <h1>oragne-proxies</h1>
+
+    <!-- Restriction Warning -->
+    <div class="restriction">
+      <p><strong>Important:</strong> This service is intended for non-commercial use only. Normal usage has been disabled, and access is restricted to specific domains. Please use this service responsibly to avoid any interruptions.</p>
+    </div>
+
+    
+    <hr>
+
+    <!-- CORS Section -->
+    <div class="section">
+      <h2>CORS Proxy</h2>
+      <p>To use the CORS proxy, use the following URL structure:</p>
+      <div class="url-structure">
+        <b>https://cors-anywhere-orn8.vercel.app/api/cors?url=</b>[your url]
+      </div>
+      <div class="instruction">
+        <p>Replace <span class="highlight">[your url]</span> with the URL you want to fetch, and it will bypass CORS restrictions.</p>
+      </div>
+      <p class="note">Example: <span class="highlight">https://cors-anywhere-orn8.vercel.app/api/cors?url=https://example.com</span></p>
+    </div>
+    
+    <hr>
+
+    <!-- Ad Removal Section -->
+    <div class="section">
+      <h2>Ad Removal Proxy</h2>
+      <p>To remove ads from a page, use the following URL structure:</p>
+      <div class="url-structure">
+        <b>https://cors-anywhere-orn8.vercel.app/api/adless?url=</b>[your url]
+      </div>
+      <div class="instruction">
+        <p>Replace <span class="highlight">[your url]</span> with the URL of the page you wish to remove ads from.</p>
+      </div>
+      <p class="note">Example: <span class="highlight">https://cors-anywhere-orn8.vercel.app/api/adless?url=https://example.com</span></p>
+    </div>
+    
+  </div>
 </body>
 </html>
