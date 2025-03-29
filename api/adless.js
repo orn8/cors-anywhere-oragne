@@ -8,18 +8,11 @@ module.exports = async function handler(request, response) {
     'https://vanishgames.oragne.dev'
   ];
 
-  // Get the origin, referer, and host headers (with fallback)
-  const origin = request.headers.origin || 'Unknown';
-  const referer = request.headers.referer || 'Unknown';
-  const host = request.headers.host || 'Unknown';
+  const origin = request.headers.origin || request.headers.referer || request.headers.host || 'Unknown';
 
   // Check if the origin is allowed
   if (!allowedOrigins.includes(origin)) {
-    return response.status(403).send({
-      origin: origin,
-      referer: referer,
-      host: host
-    });
+    return response.status(403).send('Forbidden: Access is denied.');
   }
 
   // Handle preflight OPTIONS request
