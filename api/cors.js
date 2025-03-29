@@ -2,7 +2,6 @@ export default async function handler(request, response) {
   const https = require('https');
 
   const allowedOrigins = [
-    'https://kahootfetcher.oragne.dev',
     'https://vanishgames.oragne.dev'
   ];
 
