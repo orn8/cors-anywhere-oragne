@@ -13,24 +13,24 @@ export default async function handler(request, response) {
 
   // Debugging: Log the incoming request's origin
   console.log("Request Origin:", origin);
-
+/*
   // Check if the origin is allowed
   if (!allowedOrigins.includes(origin)) {
     console.log('Forbidden: Origin not allowed:', origin);
     return response.status(403).send('Forbidden: Access is denied.');
   }
-
+*/
   // Handle preflight OPTIONS request
   if (request.method === 'OPTIONS') {
     console.log('Handling preflight OPTIONS request');
-    response.setHeader('Access-Control-Allow-Origin', origin);
+    response.setHeader('Access-Control-Allow-Origin', *);
     response.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     response.setHeader('Access-Control-Allow-Headers', '*');
     return response.status(200).end(); // Respond with a 200 OK for OPTIONS request
   }
 
   // CORS headers for actual requests
-  response.setHeader('Access-Control-Allow-Origin', origin);
+  response.setHeader('Access-Control-Allow-Origin', *);
   response.setHeader('Access-Control-Allow-Headers', '*');
 
   // Get the URL from the query parameters
