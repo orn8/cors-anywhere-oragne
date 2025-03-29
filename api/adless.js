@@ -89,7 +89,6 @@ module.exports = async function handler(request, response) {
     // Set response headers and send the modified HTML back
     response.setHeader('Content-Type', 'text/html');
     response.setHeader('Cache-Control', 's-maxage=3600, stale-while-revalidate');
-    response.setHeader('Content-Encoding', 'gzip'); // Compress response for faster loading
     response.status(200).send($.html());
 
   } catch (error) {
