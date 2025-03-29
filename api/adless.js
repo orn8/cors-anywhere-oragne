@@ -11,11 +11,25 @@ export default async function handler(request, response) {
 
   const origin = request.headers.origin;
 
+  // Debugging: Log the incoming request's origin
+  console.log("Request Origin:", origin);
+
   // Check if the origin is allowed
   if (!allowedOrigins.includes(origin)) {
+    console.log('Forbidden: Origin not allowed:', origin);
     return response.status(403).send('Forbidden: Access is denied.');
   }
-  // CORS headers
+
+  // Handle preflight OPTIONS request
+  if (request.method === 'OPTIONS') {
+    console.log('Handling preflight OPTIONS request');
+    response.setHeader('Access-Control-Allow-Origin', origin);
+    response.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    response.setHeader('Access-Control-Allow-Headers', '*');
+    return response.status(200).end(); // Respond with a 200 OK for OPTIONS request
+  }
+
+  // CORS headers for actual requests
   response.setHeader('Access-Control-Allow-Origin', origin);
   response.setHeader('Access-Control-Allow-Headers', '*');
 
@@ -25,6 +39,9 @@ export default async function handler(request, response) {
   try {
     // Fetch the content from the external URL
     const { status, data } = await getRequest(url);
+
+    // Debugging: Log the status of the response from the external URL
+    console.log("External Request Status:", status);
 
     if (status !== 200) {
       return response.status(status).send(data);
@@ -59,7 +76,8 @@ export default async function handler(request, response) {
     response.status(200).send($.html());
 
   } catch (error) {
-    console.error(error);
+    // Log the error for debugging
+    console.error("Error during request or processing:", error);
     response.status(500).json({ error: 'Error fetching or processing content' });
   }
 
