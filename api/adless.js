@@ -9,12 +9,11 @@ module.exports = async function handler(request, response) {
   ];
 
   const origin = request.headers.origin;
-
-  /*
+/*
   // Check if the origin is allowed
   if (!allowedOrigins.includes(origin)) {
     return response.status(403).send('Forbidden: Access is denied.');
-  }*/
+  } */
 
   // Handle preflight OPTIONS request
   if (request.method === 'OPTIONS') {
@@ -32,42 +31,45 @@ module.exports = async function handler(request, response) {
   let url = request.query.url;
 
   try {
-    // Parse the URL to extract hostname
+    // Parse the requested URL to get the base domain
     const parsedUrl = new URL(url);
-    const targetHost = parsedUrl.hostname;
+    const baseUrl = `${parsedUrl.protocol}//${parsedUrl.hostname}`;
 
-    // Fetch the content from the external URL with a spoofed Host header
-    const { status, data } = await getRequest(url, targetHost);
+    // Fetch the content from the external URL
+    const { status, data } = await getRequest(url);
 
     if (status !== 200) {
       return response.status(status).send(data);
     }
 
-    // Remove ads using cheerio
+    // Load HTML content using Cheerio
     const $ = cheerio.load(data);
 
-    // Remove iframe elements that contain 'ads' in the src URL
-    $('iframe').each((i, el) => {
-      const src = $(el).attr('src');
-      if (src && src.includes('ads')) {
-        $(el).remove(); // Remove iframe with 'ads' in the src
+    // Fix relative URLs (for images, scripts, styles, etc.)
+    $('img, script, link, iframe').each((i, el) => {
+      const attrName = $(el).attr('src') ? 'src' : 'href';
+      const attrValue = $(el).attr(attrName);
+
+      if (attrValue && attrValue.startsWith('/')) {
+        // Convert relative URL to absolute
+        const newUrl = baseUrl + attrValue;
+        $(el).attr(attrName, newUrl);
       }
     });
 
-    // Remove script elements related to ads
-    $('script').each((i, el) => {
+    // Remove ads
+    $('iframe, script').each((i, el) => {
       const src = $(el).attr('src');
       if (src && src.includes('ads')) {
-        $(el).remove(); // Remove script tag with 'ads' in the src
+        $(el).remove(); // Remove elements with 'ads' in the src
       }
     });
 
-    // Remove specific ad classes or elements
     $('.ad-class, .ads').each((i, el) => {
       $(el).remove(); // Remove elements with these ad classes
     });
 
-    // Send back the modified HTML with ads removed
+    // Send back the modified HTML with corrected asset paths
     response.setHeader('Content-Type', 'text/html');
     response.status(200).send($.html());
 
@@ -75,17 +77,10 @@ module.exports = async function handler(request, response) {
     response.status(500).json({ error: 'Error fetching or processing content' });
   }
 
-  // Function to make the HTTPS request to fetch content with a spoofed Host header
-  function getRequest(url, spoofedHost) {
+  // Function to make the HTTPS request to fetch content
+  function getRequest(url) {
     return new Promise(resolve => {
-      const options = {
-        headers: {
-          'Host': spoofedHost, // Spoofed Host header
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        }
-      };
-
-      const req = https.get(url, options, (resp) => {
+      const req = https.get(url, (resp) => {
         let data = '';
         resp.on('data', (chunk) => {
           data += chunk;
@@ -100,4 +95,4 @@ module.exports = async function handler(request, response) {
       });
     });
   }
-};
+}
