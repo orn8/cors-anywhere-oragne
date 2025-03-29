@@ -87,6 +87,28 @@
       color: #d32f2f;
       margin-bottom: 20px;
     }
+
+    a {
+      color: #00bcd4;
+      text-decoration: none;
+      font-weight: bold;
+      border-bottom: 2px solid #00bcd4;
+      transition: color 0.3s ease, border-bottom-color 0.3s ease;
+    }
+
+    a:hover {
+      color: #f57c00;
+      border-bottom-color: #f57c00;
+    }
+
+    .tip {
+      background-color: #dcedc8;
+      border-left: 4px solid #388e3c;
+      padding: 15px;
+      font-size: 1rem;
+      color: #388e3c;
+      margin-top: 40px;
+    }
   </style>
 </head>
 <body>
@@ -126,6 +148,11 @@
         <p>Replace <span class="highlight">[your url]</span> with the URL of the page you wish to remove ads from.</p>
       </div>
       <p class="note">Example: <span class="highlight">https://oragne-proxies.vercel.app/api/adless?url=https://example.com</span></p>
+    </div>
+
+    <!-- Info Section -->
+    <div class="tip">
+      <p><strong>Tip:</strong> If you're encountering errors, try encoding your replaced URL to HTML URL encoding <a href="https://www.urlencoder.org/" target="_blank">here</a>.</p>
     </div>
     
   </div>
