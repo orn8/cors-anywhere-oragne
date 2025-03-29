@@ -1,11 +1,10 @@
-export default async function handler(request, response) {
-  const https = require('https');
+const https = require('https');
+const cheerio = require('cheerio');
 
+module.exports = async function handler(request, response) {
   // Allowed origins for CORS
-  const allowedOrigins = [
-    'https://vanishgames.oragne.dev'
-  ];
-  
+  const allowedOrigins = ['https://vanishgames.oragne.dev'];
+
   const origin = request.headers.origin;
 
   // Check if origin is allowed
@@ -14,7 +13,7 @@ export default async function handler(request, response) {
   }
 
   // Set CORS headers
-  response.setHeader('Access-Control-Allow-Origin', '*');
+  response.setHeader('Access-Control-Allow-Origin', origin);
   response.setHeader('Access-Control-Allow-Headers', '*');
 
   // Build the final URL with query parameters
@@ -25,11 +24,40 @@ export default async function handler(request, response) {
     url += '&' + entry[0] + '=' + entry[1];
   });
 
-  // Fetch data from the external URL
-  const { status, data } = await getRequest(url);
+  try {
+    // Parse the requested URL to get the base domain
+    const parsedUrl = new URL(url);
+    const baseUrl = `${parsedUrl.protocol}//${parsedUrl.hostname}`;
 
-  // Send the response with fetched data
-  response.status(status).send(data);
+    // Fetch the content from the external URL
+    const { status, data } = await getRequest(url);
+
+    if (status !== 200) {
+      return response.status(status).send(data);
+    }
+
+    // Load HTML content using Cheerio
+    const $ = cheerio.load(data);
+
+    // Fix relative URLs (for images, scripts, styles, etc.)
+    $('img, script, link, iframe').each((i, el) => {
+      const attrName = $(el).attr('src') ? 'src' : 'href';
+      const attrValue = $(el).attr(attrName);
+
+      if (attrValue && attrValue.startsWith('/')) {
+        // Convert relative URL to absolute
+        const newUrl = baseUrl + attrValue;
+        $(el).attr(attrName, newUrl);
+      }
+    });
+
+    // Send back the modified HTML
+    response.setHeader('Content-Type', 'text/html');
+    response.status(200).send($.html());
+
+  } catch (error) {
+    response.status(500).json({ error: 'Error fetching or processing content' });
+  }
 
   // Function to make an HTTPS request and return the data
   function getRequest(url) {
@@ -42,4 +70,4 @@ export default async function handler(request, response) {
       req.on('error', (err) => { resolve({ status: 500, data: err.message }); });
     });
   }
-}
+};
