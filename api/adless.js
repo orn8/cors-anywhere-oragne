@@ -12,11 +12,9 @@ export default async function handler(request, response) {
   const origin = request.headers.origin;
 
   // Check if the origin is allowed
-    /*
   if (!allowedOrigins.includes(origin)) {
     return response.status(403).send('Forbidden: Access is denied.');
   }
-*/
   // CORS headers
   response.setHeader('Access-Control-Allow-Origin', origin);
   response.setHeader('Access-Control-Allow-Headers', '*');
