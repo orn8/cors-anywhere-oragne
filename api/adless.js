@@ -48,23 +48,10 @@ module.exports = async function handler(request, response) {
     // Load HTML content using Cheerio
     const $ = cheerio.load(data);
 
-    // Fix relative URLs (for images, scripts, styles, etc.)
-    $('img, script, link, iframe').each((i, el) => {
-      const attrName = $(el).attr('src') ? 'src' : 'href';
-      const attrValue = $(el).attr(attrName);
-
-      if (attrValue) {
-        if (attrValue.startsWith('//')) {
-          // Handle protocol-relative URLs
-          const newUrl = parsedUrl.protocol + attrValue; // Use the same protocol as the current page
-          $(el).attr(attrName, newUrl);
-        } else if (attrValue.startsWith('/')) {
-          // Convert relative URL to absolute
-          const newUrl = baseUrl + attrValue;
-          $(el).attr(attrName, newUrl);
-        }
-      }
-    });
+    // Add <base> tag only if one does not already exist
+    if ($('base').length === 0) {
+      $('head').prepend(`<base href="${baseUrl}/">`);
+    }
 
     // Remove ads
     $('iframe, script').each((i, el) => {
