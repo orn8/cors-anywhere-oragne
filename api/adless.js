@@ -48,22 +48,24 @@ module.exports = async function handler(request, response) {
     // Load HTML content using Cheerio
     const $ = cheerio.load(data);
 
-    // Fix relative URLs (for images, scripts, styles, etc.)
-    $('img, script, link, iframe').each((i, el) => {
-      const attrName = $(el).attr('src') ? 'src' : 'href';
-      const attrValue = $(el).attr(attrName);
-
-      if (attrValue) {
-        if (attrValue.startsWith('/')) {
-          // Convert relative URL to absolute
-          const newUrl = baseUrl + attrValue;
-          $(el).attr(attrName, newUrl);
-        } else if (attrValue.startsWith('//')) {
-          // Handle protocol-relative URLs
-          const newUrl = parsedUrl.protocol + attrValue; // Use the same protocol as the current page
-          $(el).attr(attrName, newUrl);
+    // Normalize URLs in all elements
+    $('img, script, link, iframe, a, form, style, input, object, video, audio, source, embed, picture, noscript, param, base, meta').each((i, el) => {
+      // Check and normalise all possible attributes for URLs
+      ['src', 'href', 'action', 'data-src', 'poster', 'data', 'background', 'srcset', 'type', 'value', 'content'].forEach(attr => {
+        const attrValue = $(el).attr(attr);
+        
+        if (attrValue) {
+          if (attrValue.startsWith('/')) {
+            // Convert relative URL to absolute
+            const newUrl = baseUrl + attrValue;
+            $(el).attr(attr, newUrl);
+          } else if (attrValue.startsWith('//')) {
+            // Handle protocol-relative URLs
+            const newUrl = parsedUrl.protocol + attrValue; // Use the same protocol as the current page
+            $(el).attr(attr, newUrl);
+          }
         }
-      }
+      });
     });
 
     // Remove ads
