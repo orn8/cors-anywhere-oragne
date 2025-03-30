@@ -12,9 +12,9 @@ module.exports = async function handler(request, response) {
 
   // Normalise the origin by trimming any trailing slashes and converting to lowercase
   const normalisedOrigin = origin.replace(/\/$/, '').toLowerCase();
-  console.log('Normalized Origin:', normalisedOrigin);  // Log the normalized origin
+  console.log('Normalised Origin:', normalisedOrigin);  // Log the normalised origin
 
-  // Check if the normalized origin is allowed
+  // Check if the normalised origin is allowed
   if (!allowedOrigins.some(allowedOrigin => allowedOrigin.toLowerCase() === normalisedOrigin)) {
     console.log('Forbidden Access: Origin not allowed');  // Log forbidden access
     return response.status(403).send('Forbidden: Access is denied.');
