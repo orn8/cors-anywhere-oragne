@@ -1,11 +1,36 @@
 const axios = require('axios');
 const cheerio = require('cheerio');
 
+// EasyList filter URL
+const EASYLIST_URL = 'https://easylist.to/easylist/easylist.txt';
+
+// Helper function to fetch EasyList rules
+async function fetchEasyList() {
+  try {
+    const { data } = await axios.get(EASYLIST_URL, { timeout: 5000 });
+    return data.split('\n').filter(line => line && !line.startsWith('!')); // Remove comments and empty lines
+  } catch (error) {
+    console.error('Error fetching EasyList:', error);
+    return [];
+  }
+}
+
+// Function to check if a URL matches any EasyList rule
+function matchesEasyList(url, easyList) {
+  // Loop through each EasyList rule
+  for (const rule of easyList) {
+    // Simple wildcard match (e.g., *.google.com matches google.com)
+    const regex = new RegExp(rule.replace(/\*/g, '.*').replace(/\./g, '\\.'));
+    if (regex.test(url)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 module.exports = async function handler(request, response) {
   // Allowed origins for CORS
-  const allowedOrigins = [
-    'https://vanishgames.oragne.dev'
-  ];
+  const allowedOrigins = ['https://vanishgames.oragne.dev'];
 
   // Get origin or referer or host
   const origin = request.headers.origin || request.headers.referer || request.headers.host || 'Unknown';
@@ -34,6 +59,9 @@ module.exports = async function handler(request, response) {
   let url = request.query.url;
 
   try {
+    // Fetch the EasyList rules
+    const easyList = await fetchEasyList();
+
     // Parse the requested URL to get the base domain
     const parsedUrl = new URL(url);
     const baseUrl = `${parsedUrl.protocol}//${parsedUrl.hostname}`;
@@ -49,40 +77,32 @@ module.exports = async function handler(request, response) {
     const $ = cheerio.load(data);
 
     // Fix relative URLs (for images, scripts, styles, etc.)
-    $('img, script, link, iframe').each((i, el) => {
+    $('img, script, link, iframe, object, embed').each((i, el) => {
       const attrName = $(el).attr('src') ? 'src' : 'href';
-      const attrValue = $(el).attr(attrName);
+      let attrValue = $(el).attr(attrName);
 
       if (attrValue) {
         if (attrValue.startsWith('/')) {
-          // Convert relative URL to absolute
+          // Convert relative URL to absolute (prepend the baseUrl)
           const newUrl = baseUrl + attrValue;
           $(el).attr(attrName, newUrl);
         } else if (attrValue.startsWith('//')) {
-          // Handle protocol-relative URLs
-          const newUrl = parsedUrl.protocol + attrValue; // Use the same protocol as the current page
+          // Handle protocol-relative URLs (prepend the protocol)
+          const newUrl = parsedUrl.protocol + attrValue;
           $(el).attr(attrName, newUrl);
         }
-      }
-    });
 
-    // Remove ads
-    $('iframe, script').each((i, el) => {
-      const src = $(el).attr('src');
-      if (src && src.includes('ads')) {
-        $(el).remove(); // Remove elements with 'ads' in the src
+        // Check if the URL matches any EasyList rule (block ads)
+        if (matchesEasyList(attrValue, easyList)) {
+          $(el).remove(); // Remove ad elements matching EasyList rules
+        }
       }
-    });
-
-    // Remove known ad classes or inline ads
-    $('.ad-class, .ads').each((i, el) => {
-      $(el).remove(); // Remove elements with these ad classes
     });
 
     // Fix inline CSS for asset paths (like images, fonts)
     $('style').each((i, el) => {
       let css = $(el).html();
-      css = css.replace(/url\(['"]?(\/[^)'"]+)['"]?\)/g, `url(${baseUrl}$1)`);
+      css = css.replace(/url\(['"]?(\/[^)'"]+)['"]?\)/g, `url(${baseUrl}$1)`); // Normalize URLs in CSS
       $(el).html(css);
     });
 
@@ -94,4 +114,4 @@ module.exports = async function handler(request, response) {
   } catch (error) {
     response.status(500).json({ error: 'Error fetching or processing content' });
   }
-}
+};
