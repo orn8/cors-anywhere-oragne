@@ -60,16 +60,16 @@ module.exports = async function handler(request, response) {
 
       if (attrValue) {
         console.log(`Normalising URL for ${attrName}:`, attrValue);  // Log each element's URL being normalised
-        if (attrValue.startsWith('/')) {
-          // Convert relative URL to absolute
-          const newUrl = baseUrl + attrValue;
-          $(el).attr(attrName, newUrl);
-          console.log(`Converted to absolute URL: ${newUrl}`);  // Log absolute URLs
-        } else if (attrValue.startsWith('//')) {
+        if (attrValue.startsWith('//')) {
           // Handle protocol-relative URLs
           const newUrl = parsedUrl.protocol + attrValue; // Use the same protocol as the current page
           $(el).attr(attrName, newUrl);
           console.log(`Converted to protocol-relative URL: ${newUrl}`);  // Log protocol-relative URLs
+        } else if (attrValue.startsWith('/')) {
+          // Convert relative URL to absolute
+          const newUrl = baseUrl + attrValue;
+          $(el).attr(attrName, newUrl);
+          console.log(`Converted to absolute URL: ${newUrl}`);  // Log absolute URLs
         }
       }
     });
