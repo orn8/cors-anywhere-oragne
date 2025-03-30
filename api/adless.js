@@ -69,13 +69,13 @@ module.exports = async function handler(request, response) {
     // Remove ads
     $('iframe, script').each((i, el) => {
       const src = $(el).attr('src');
-      if (src && /(ads|doubleclick|googlesyndication|adservice|tracking|banners)/i.test(src)) {
+      if (src && src.includes('ads')) {
         $(el).remove(); // Remove elements with 'ads' in the src
       }
     });
 
     // Remove known ad classes or inline ads
-    $('[class*="ad"], [id*="ad"], div:contains("advertisement")').each((i, el) => {
+    $('.ad-class, .ads').each((i, el) => {
       $(el).remove(); // Remove elements with these ad classes
     });
 
