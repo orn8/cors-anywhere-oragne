@@ -66,8 +66,8 @@ module.exports = async function handler(request, response) {
       }
     });
 
-    // Remove ads
-    $('iframe, script').each((i, el) => {
+    // Remove ad-related elements (iframes, scripts, objects, embeds, applets)
+    $('iframe, script, object, embed, applet').each((i, el) => {
       const src = $(el).attr('src');
       if (src && src.includes('ads')) {
         $(el).remove(); // Remove elements with 'ads' in the src
