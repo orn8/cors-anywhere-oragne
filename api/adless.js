@@ -48,11 +48,10 @@ module.exports = async function handler(request, response) {
     // Load HTML content using Cheerio
     const $ = cheerio.load(data);
 
-    // Fix relative URLs (for images, scripts, styles, etc.)
-    $('img, script, link, iframe').each((i, el) => {
-      const attrName = $(el).attr('src') ? 'src' : 'href';
+    $('img, script, link, iframe, object, embed').each((i, el) => {
+      const attrName = $(el).attr('src') ? 'src' : $(el).attr('data') ? 'data' : null;
       const attrValue = $(el).attr(attrName);
-
+    
       if (attrValue) {
         if (attrValue.startsWith('/')) {
           // Convert relative URL to absolute
@@ -64,15 +63,16 @@ module.exports = async function handler(request, response) {
           $(el).attr(attrName, newUrl);
         }
       }
-    });
+    });    
 
-    // Remove ads
-    $('iframe, script').each((i, el) => {
-      const src = $(el).attr('src');
-      if (src && src.includes('ads')) {
-        $(el).remove(); // Remove elements with 'ads' in the src
-      }
-    });
+  // Remove ads from iframe, script, object, and embed tags
+  $('iframe, script, object, embed').each((i, el) => {
+    const src = $(el).attr('src') || $(el).attr('data'); // Check src or data attributes for ad links
+    
+    if (src && src.includes('ads')) {
+      $(el).remove(); // Remove elements with 'ads' in the src or data attributes
+    }
+  });
 
     // Remove known ad classes or inline ads
     $('.ad-class, .ads').each((i, el) => {
