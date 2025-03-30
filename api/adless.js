@@ -49,7 +49,7 @@ module.exports = async function handler(request, response) {
     const $ = cheerio.load(data);
 
     // Fix relative URLs (for images, scripts, styles, etc.)
-    $('img, script, link, iframe, object, embed').each((i, el) => {
+    $('img, script, link, iframe').each((i, el) => {
       const attrName = $(el).attr('src') ? 'src' : 'href';
       const attrValue = $(el).attr(attrName);
 
@@ -67,10 +67,8 @@ module.exports = async function handler(request, response) {
     });
 
     // Remove ads
-    $('iframe, script, object, embed').each((i, el) => {
+    $('iframe, script').each((i, el) => {
       const src = $(el).attr('src');
-      const type = $(el).attr('type');
-    
       if (src && src.includes('ads')) {
         $(el).remove(); // Remove elements with 'ads' in the src
       }
