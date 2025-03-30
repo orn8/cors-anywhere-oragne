@@ -3,13 +3,18 @@ const cheerio = require('cheerio');
 
 module.exports = async function handler(request, response) {
   // Allowed origins for CORS
-  const allowedOrigins = ['https://vanishgames.oragne.dev'];
+  const allowedOrigins = [
+    'https://vanishgames.oragne.dev'
+  ];
 
-  // Get origin or referer or host and normalize
-  const origin = (request.headers.origin || request.headers.referer || request.headers.host || 'Unknown').replace(/\/$/, '').toLowerCase();
+  // Get origin or referer or host
+  const origin = request.headers.origin || request.headers.referer || request.headers.host || 'Unknown';
 
-  // Check if origin is allowed
-  if (!allowedOrigins.some(allowedOrigin => allowedOrigin.toLowerCase() === origin)) {
+  // Normalise the origin by trimming any trailing slashes and converting to lowercase
+  const normalisedOrigin = origin.replace(/\/$/, '').toLowerCase();
+
+  // Check if the normalized origin is allowed
+  if (!allowedOrigins.some(allowedOrigin => allowedOrigin.toLowerCase() === normalisedOrigin)) {
     return response.status(403).send('Forbidden: Access is denied.');
   }
 
@@ -18,22 +23,23 @@ module.exports = async function handler(request, response) {
     response.setHeader('Access-Control-Allow-Origin', origin);
     response.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     response.setHeader('Access-Control-Allow-Headers', '*');
-    return response.status(200).end();
+    return response.status(200).end(); // Respond with a 200 OK for OPTIONS request
   }
 
-  // Set CORS headers for actual requests
+  // CORS headers for actual requests
   response.setHeader('Access-Control-Allow-Origin', origin);
   response.setHeader('Access-Control-Allow-Headers', '*');
 
-  // Get URL from query
+  // Get the URL from the query parameters
   let url = request.query.url;
 
   try {
+    // Parse the requested URL to get the base domain
     const parsedUrl = new URL(url);
     const baseUrl = `${parsedUrl.protocol}//${parsedUrl.hostname}`;
 
-    // Fetch content from URL
-    const { status, data } = await axios.get(url, { timeout: 5000 });
+    // Fetch the content from the external URL using Axios
+    const { status, data } = await axios.get(url, { timeout: 5000 }); // 5s timeout
 
     if (status !== 200) {
       return response.status(status).send(data);
@@ -42,46 +48,45 @@ module.exports = async function handler(request, response) {
     // Load HTML content using Cheerio
     const $ = cheerio.load(data);
 
-    // Normalise all elements with relevant attributes
-    const normaliseUrl = (el, attr) => {
-      const attrValue = $(el).attr(attr);
+    // Fix relative URLs (for images, scripts, styles, etc.)
+    $('img, script, link, iframe').each((i, el) => {
+      const attrName = $(el).attr('src') ? 'src' : 'href';
+      const attrValue = $(el).attr(attrName);
+
       if (attrValue) {
         if (attrValue.startsWith('/')) {
-          $(el).attr(attr, baseUrl + attrValue);
+          // Convert relative URL to absolute
+          const newUrl = baseUrl + attrValue;
+          $(el).attr(attrName, newUrl);
         } else if (attrValue.startsWith('//')) {
-          $(el).attr(attr, parsedUrl.protocol + attrValue);
-        }
-      }
-    };
-
-    // Normalise common attributes in all relevant elements
-    $('img, script, link, iframe, a, form, style, input, object, video, audio, source, embed, picture, noscript, param, base, meta').each((i, el) => {
-      ['src', 'href', 'action', 'data-src', 'poster', 'data', 'background', 'srcset', 'type', 'value', 'content'].forEach(attr => normaliseUrl(el, attr));
-
-      // Special handling for <object>, <embed>, <param> elements
-      if ($(el).is('object') || $(el).is('embed') || $(el).is('param')) {
-        const attrValue = $(el).attr('data') || $(el).attr('src') || $(el).attr('value');
-        if (attrValue && attrValue.startsWith('/')) {
-          $(el).attr($(el).is('object') ? 'data' : $(el).is('embed') ? 'src' : 'value', baseUrl + attrValue);
+          // Handle protocol-relative URLs
+          const newUrl = parsedUrl.protocol + attrValue; // Use the same protocol as the current page
+          $(el).attr(attrName, newUrl);
         }
       }
     });
 
-    // Remove ads (iframe, script, and known ad classes)
+    // Remove ads
     $('iframe, script').each((i, el) => {
       const src = $(el).attr('src');
-      if (src && src.includes('ads')) $(el).remove();
+      if (src && src.includes('ads')) {
+        $(el).remove(); // Remove elements with 'ads' in the src
+      }
     });
-    $('.ad-class, .ads').remove();
 
-    // Normalise inline CSS URLs
+    // Remove known ad classes or inline ads
+    $('.ad-class, .ads').each((i, el) => {
+      $(el).remove(); // Remove elements with these ad classes
+    });
+
+    // Fix inline CSS for asset paths (like images, fonts)
     $('style').each((i, el) => {
       let css = $(el).html();
       css = css.replace(/url\(['"]?(\/[^)'"]+)['"]?\)/g, `url(${baseUrl}$1)`);
       $(el).html(css);
     });
 
-    // Return the normalised HTML
+    // Set response headers and send the modified HTML back
     response.setHeader('Content-Type', 'text/html');
     response.setHeader('Cache-Control', 's-maxage=3600, stale-while-revalidate');
     response.status(200).send($.html());
@@ -89,4 +94,4 @@ module.exports = async function handler(request, response) {
   } catch (error) {
     response.status(500).json({ error: 'Error fetching or processing content' });
   }
-};
+}
