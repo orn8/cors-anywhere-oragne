@@ -65,14 +65,13 @@ module.exports = async function handler(request, response) {
       }
     });    
 
-  // Remove ads from iframe, script, object, and embed tags
-  $('iframe, script, object, embed').each((i, el) => {
-    const src = $(el).attr('src') || $(el).attr('data'); // Check src or data attributes for ad links
-    
-    if (src && src.includes('ads')) {
-      $(el).remove(); // Remove elements with 'ads' in the src or data attributes
-    }
-  });
+    // Remove ads
+    $('iframe, script').each((i, el) => {
+      const src = $(el).attr('src');
+      if (src && src.includes('ads')) {
+        $(el).remove(); // Remove elements with 'ads' in the src
+      }
+    });
 
     // Remove known ad classes or inline ads
     $('.ad-class, .ads').each((i, el) => {
