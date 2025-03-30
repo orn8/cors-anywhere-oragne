@@ -79,29 +79,24 @@ module.exports = async function handler(request, response) {
       $(el).remove(); // Remove elements with these ad classes
     });
 
+    // Define the regex pattern for blocking analytics and tracking scripts
+    const trackingAndAnalyticsRegex = new RegExp(
+      '^(.*(?:google-analytics\\.com|doubleclick\\.net|googletagmanager\\.com|googleadservices\\.com|hotjar\\.com|bugsnag\\.com|sentry\\.io).*)|.*(?:ga|analytics|hotjar|bugsnag|sentry).*\\.(?:js|css)$'
+    );
+
     // Block Google Analytics, Hotjar, Sentry, and Bugsnag scripts (both external and inline)
     $('script').each((i, el) => {
       const src = $(el).attr('src');
       const scriptContent = $(el).html();
 
       // Check for external scripts
-      if (src && (
-        src.includes('google-analytics.com') || 
-        src.includes('hotjar.com') ||
-        src.includes('sentry.io') ||
-        src.includes('bugsnag.com')
-      )) {
-        $(el).remove(); // Remove these external scripts
+      if (src && trackingAndAnalyticsRegex.test(src)) {
+        $(el).remove(); // Remove external scripts matching the pattern
       }
 
       // Check for inline scripts
-      if (scriptContent && (
-        scriptContent.includes('gtag(') || // Google Analytics inline code
-        scriptContent.includes('hj(') ||  // Hotjar inline code
-        scriptContent.includes('Sentry.init(') ||  // Sentry initialisation
-        scriptContent.includes('Bugsnag(') // Bugsnag initialisation
-      )) {
-        $(el).remove(); // Remove these inline scripts
+      if (scriptContent && trackingAndAnalyticsRegex.test(scriptContent)) {
+        $(el).remove(); // Remove inline scripts matching the pattern
       }
     });
 
