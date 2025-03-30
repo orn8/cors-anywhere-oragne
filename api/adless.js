@@ -79,21 +79,12 @@ module.exports = async function handler(request, response) {
       $('head').prepend(`<base href="${baseUrl}/">`);
     }
 
-    // Apply CSP Filtering
-    const cspDirectives = engine.getCSPDirectives(Request.fromRawDetails({
-      type: 'main_frame',
-      url: url
-    }));
-    if (cspDirectives) {
-      response.setHeader('Content-Security-Policy', cspDirectives.join('; '));
-    }
-
     console.log('Applying EasyList filters to remove ads...');
-    
+
     // Remove ads based on EasyList filters
     $('iframe, script, img, link, meta').each((i, el) => {
       const src = $(el).attr('src') || $(el).attr('href') || '';
-      
+
       let urlToCheck = src;
       if (src.startsWith('//')) {
         urlToCheck = `${parsedUrl.protocol}${src}`; // Protocol-relative URL
@@ -121,18 +112,6 @@ module.exports = async function handler(request, response) {
         }
       }
     });
-
-    // Apply Cosmetic Filtering: Inject Styles for Hidden Ads
-    const { styles } = engine.getCosmeticsFilters({
-      url: parsedUrl.href,
-      hostname: parsedUrl.hostname,
-      domain: parsedUrl.hostname.replace(/^www\./, ''),
-    });
-
-    if (styles) {
-      $('head').append(`<style>${styles}</style>`);
-      console.log('Injected cosmetics styles for hidden ads.');
-    }
 
     // Set response headers and send the modified HTML back
     response.setHeader('Content-Type', 'text/html');
