@@ -50,7 +50,7 @@ module.exports = async function handler(request, response) {
 
     $('img, script, link, iframe, object, embed').each((i, el) => {
       const attrName = $(el).attr('src') ? 'src' : $(el).attr('data') ? 'data' : null;
-      const attrValue = $(el).attr(attrName);
+      const attrValue = attrName ? $(el).attr(attrName) : null;
     
       if (attrValue) {
         if (attrValue.startsWith('/')) {
@@ -65,11 +65,12 @@ module.exports = async function handler(request, response) {
       }
     });    
 
-    // Remove ads
-    $('iframe, script').each((i, el) => {
-      const src = $(el).attr('src');
+    // Remove ads from iframe, script, object, and embed tags
+    $('iframe, script, object, embed').each((i, el) => {
+      const src = $(el).attr('src') || $(el).attr('data'); // Check src or data attributes for ad links
+      
       if (src && src.includes('ads')) {
-        $(el).remove(); // Remove elements with 'ads' in the src
+        $(el).remove(); // Remove elements with 'ads' in the src or data attributes
       }
     });
 
