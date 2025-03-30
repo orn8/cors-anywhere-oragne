@@ -6,10 +6,16 @@ let engine;
 
 // Initialise AdBlock Engine with EasyList and EasyPrivacy
 async function initialiseAdBlocker() {
-  engine = await FiltersEngine.fromLists(fetch, [
-    'https://easylist.to/easylist/easylist.txt',
-    'https://easylist.to/easylist/easyprivacy.txt'
-  ]);
+  try {
+    console.log('Initialising AdBlocker...');
+    engine = await FiltersEngine.fromLists(fetch, [
+      'https://easylist.to/easylist/easylist.txt',
+      'https://easylist.to/easylist/easyprivacy.txt'
+    ]);
+    console.log('AdBlocker initialised successfully.');
+  } catch (error) {
+    console.error('Error initialising AdBlocker:', error);
+  }
 }
 
 initialiseAdBlocker();
@@ -19,15 +25,19 @@ module.exports = async function handler(request, response) {
   const allowedOrigins = [
     'https://vanishgames.oragne.dev'
   ];
-  
+
+  console.log('Received request from:', request.headers.origin);
+
   // Get origin or referer or host
   const origin = request.headers.origin || request.headers.referer || request.headers.host || 'Unknown';
   
   // Normalise the origin by trimming any trailing slashes and converting to lowercase
   const normalisedOrigin = origin.replace(/\/$/, '').toLowerCase();
+  console.log('Normalised origin:', normalisedOrigin);
 
   // Check if the normalised origin is allowed
   if (!allowedOrigins.includes(normalisedOrigin)) {
+    console.log('Forbidden access attempt detected:', normalisedOrigin);
     return response.status(403).send('Forbidden: Access is denied.');
   }
 
@@ -47,6 +57,8 @@ module.exports = async function handler(request, response) {
   let url = request.query.url;
 
   try {
+    console.log('Fetching URL:', url);
+
     // Parse the requested URL to get the base domain
     const parsedUrl = new URL(url);
     const baseUrl = `${parsedUrl.protocol}//${parsedUrl.hostname}`;
@@ -54,6 +66,7 @@ module.exports = async function handler(request, response) {
     // Fetch the content from the external URL using Axios
     const { status, data } = await axios.get(url, { timeout: 5000 }); // 5s timeout
 
+    console.log(`Received response with status: ${status}`);
     if (status !== 200) {
       return response.status(status).send(data);
     }
@@ -75,6 +88,8 @@ module.exports = async function handler(request, response) {
       response.setHeader('Content-Security-Policy', cspDirectives.join('; '));
     }
 
+    console.log('Applying EasyList filters to remove ads...');
+    
     // Remove ads based on EasyList filters
     $('iframe, script, img, link, meta').each((i, el) => {
       const src = $(el).attr('src') || $(el).attr('href') || '';
@@ -91,13 +106,18 @@ module.exports = async function handler(request, response) {
         url: urlToCheck,
       });
 
+      console.log('Checking URL to block:', urlToCheck);
+
       const { match, redirect } = engine.match(requestDetails);
 
       if (match) {
+        console.log(`Matched ad: ${urlToCheck}`);
         if (redirect) {
           $(el).attr('src', redirect); // Redirect ad request if necessary
+          console.log(`Redirecting to: ${redirect}`);
         } else {
           $(el).remove(); // Remove blocked requests
+          console.log('Removed ad element.');
         }
       }
     });
@@ -111,6 +131,7 @@ module.exports = async function handler(request, response) {
 
     if (styles) {
       $('head').append(`<style>${styles}</style>`);
+      console.log('Injected cosmetics styles for hidden ads.');
     }
 
     // Set response headers and send the modified HTML back
@@ -119,6 +140,7 @@ module.exports = async function handler(request, response) {
     response.status(200).send($.html());
 
   } catch (error) {
+    console.error('Error during request processing:', error);
     response.status(500).json({ error: 'Error fetching or processing content' });
   }
 }
