@@ -1,30 +1,16 @@
 const axios = require('axios');
 const cheerio = require('cheerio');
 
-// Function to fetch and parse EasyList general blocking rules
-async function fetchEasyList() {
-  const response = await axios.get('https://raw.githubusercontent.com/easylist/easylist/refs/heads/master/easylist/easylist_general_block.txt');
-  const data = response.data;
-  return data.split('\n').filter(rule => rule && !rule.startsWith('!'));
-}
-
-// Function to check if a URL matches any EasyList pattern
-function matchesEasyList(url, easyListRules) {
-  return easyListRules.some(rule => {
-    // Convert pattern to regex and test if URL matches
-    const pattern = new RegExp(rule.replace(/\*/g, '.*').replace(/\$/g, '$'));
-    return pattern.test(url);
-  });
-}
-
 module.exports = async function handler(request, response) {
   // Allowed origins for CORS
-  const allowedOrigins = ['https://vanishgames.oragne.dev'];
+  const allowedOrigins = [
+    'https://vanishgames.oragne.dev'
+  ];
 
   // Get origin or referer or host
   const origin = request.headers.origin || request.headers.referer || request.headers.host || 'Unknown';
 
-  // Normalize the origin by trimming any trailing slashes and converting to lowercase
+  // Normalise the origin by trimming any trailing slashes and converting to lowercase
   const normalisedOrigin = origin.replace(/\/$/, '').toLowerCase();
 
   // Check if the normalized origin is allowed
@@ -48,9 +34,6 @@ module.exports = async function handler(request, response) {
   let url = request.query.url;
 
   try {
-    // Fetch EasyList rules
-    const easyListRules = await fetchEasyList();
-
     // Parse the requested URL to get the base domain
     const parsedUrl = new URL(url);
     const baseUrl = `${parsedUrl.protocol}//${parsedUrl.hostname}`;
@@ -66,7 +49,7 @@ module.exports = async function handler(request, response) {
     const $ = cheerio.load(data);
 
     // Fix relative URLs (for images, scripts, styles, etc.)
-    $('img, script, link, iframe').each((i, el) => {
+    $('img, script, link, iframe, object, embed').each((i, el) => {
       const attrName = $(el).attr('src') ? 'src' : 'href';
       const attrValue = $(el).attr(attrName);
 
@@ -80,12 +63,29 @@ module.exports = async function handler(request, response) {
           const newUrl = parsedUrl.protocol + attrValue; // Use the same protocol as the current page
           $(el).attr(attrName, newUrl);
         }
-
-        // Check if the URL matches any EasyList rules and remove if it does
-        if (matchesEasyList(attrValue, easyListRules)) {
-          $(el).remove();
-        }
       }
+    });
+
+    // Remove ads
+    $('iframe, script, object, embed').each((i, el) => {
+      const src = $(el).attr('src');
+      const type = $(el).attr('type');
+    
+      if (src && src.includes('ads')) {
+        $(el).remove(); // Remove elements with 'ads' in the src
+      }
+    });
+
+    // Remove known ad classes or inline ads
+    $('.ad-class, .ads').each((i, el) => {
+      $(el).remove(); // Remove elements with these ad classes
+    });
+
+    // Fix inline CSS for asset paths (like images, fonts)
+    $('style').each((i, el) => {
+      let css = $(el).html();
+      css = css.replace(/url\(['"]?(\/[^)'"]+)['"]?\)/g, `url(${baseUrl}$1)`);
+      $(el).html(css);
     });
 
     // Set response headers and send the modified HTML back
