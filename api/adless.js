@@ -79,6 +79,32 @@ module.exports = async function handler(request, response) {
       $(el).remove(); // Remove elements with these ad classes
     });
 
+    // Block Google Analytics, Hotjar, Sentry, and Bugsnag scripts (both external and inline)
+    $('script').each((i, el) => {
+      const src = $(el).attr('src');
+      const scriptContent = $(el).html();
+
+      // Check for external scripts
+      if (src && (
+        src.includes('google-analytics.com') || 
+        src.includes('hotjar.com') ||
+        src.includes('sentry.io') ||
+        src.includes('bugsnag.com')
+      )) {
+        $(el).remove(); // Remove these external scripts
+      }
+
+      // Check for inline scripts
+      if (scriptContent && (
+        scriptContent.includes('gtag(') || // Google Analytics inline code
+        scriptContent.includes('hj(') ||  // Hotjar inline code
+        scriptContent.includes('Sentry.init(') ||  // Sentry initialisation
+        scriptContent.includes('Bugsnag(') // Bugsnag initialisation
+      )) {
+        $(el).remove(); // Remove these inline scripts
+      }
+    });
+
     // Fix inline CSS for asset paths (like images, fonts)
     $('style').each((i, el) => {
       let css = $(el).html();
