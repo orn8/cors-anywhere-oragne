@@ -1,20 +1,33 @@
 const axios = require('axios');
 const cheerio = require('cheerio');
+const { FiltersEngine, Request } = require('@ghostery/adblocker');
+
+let engine;
+
+// Initialise AdBlock Engine with EasyList and EasyPrivacy
+async function initialiseAdBlocker() {
+  engine = await FiltersEngine.fromLists(fetch, [
+    'https://easylist.to/easylist/easylist.txt',
+    'https://easylist.to/easylist/easyprivacy.txt'
+  ]);
+}
+
+initialiseAdBlocker();
 
 module.exports = async function handler(request, response) {
   // Allowed origins for CORS
   const allowedOrigins = [
     'https://vanishgames.oragne.dev'
   ];
-
+  
   // Get origin or referer or host
   const origin = request.headers.origin || request.headers.referer || request.headers.host || 'Unknown';
-
+  
   // Normalise the origin by trimming any trailing slashes and converting to lowercase
   const normalisedOrigin = origin.replace(/\/$/, '').toLowerCase();
 
   // Check if the normalised origin is allowed
-  if (!allowedOrigins.some(allowedOrigin => allowedOrigin.toLowerCase() === normalisedOrigin)) {
+  if (!allowedOrigins.includes(normalisedOrigin)) {
     return response.status(403).send('Forbidden: Access is denied.');
   }
 
@@ -53,25 +66,52 @@ module.exports = async function handler(request, response) {
       $('head').prepend(`<base href="${baseUrl}/">`);
     }
 
-    // Remove ads
-    $('iframe, script').each((i, el) => {
-      const src = $(el).attr('src');
-      if (src && src.includes('ads')) {
-        $(el).remove(); // Remove elements with 'ads' in the src
+    // Apply CSP Filtering
+    const cspDirectives = engine.getCSPDirectives(Request.fromRawDetails({
+      type: 'main_frame',
+      url: url
+    }));
+    if (cspDirectives) {
+      response.setHeader('Content-Security-Policy', cspDirectives.join('; '));
+    }
+
+    // Remove ads based on EasyList filters
+    $('iframe, script, img, link, meta').each((i, el) => {
+      const src = $(el).attr('src') || $(el).attr('href') || '';
+      
+      let urlToCheck = src;
+      if (src.startsWith('//')) {
+        urlToCheck = `${parsedUrl.protocol}${src}`; // Protocol-relative URL
+      } else if (src.startsWith('/')) {
+        urlToCheck = `${baseUrl}${src}`; // Relative URL
+      }
+
+      const requestDetails = Request.fromRawDetails({
+        type: 'script',
+        url: urlToCheck,
+      });
+
+      const { match, redirect } = engine.match(requestDetails);
+
+      if (match) {
+        if (redirect) {
+          $(el).attr('src', redirect); // Redirect ad request if necessary
+        } else {
+          $(el).remove(); // Remove blocked requests
+        }
       }
     });
 
-    // Remove known ad classes or inline ads
-    $('.ad-class, .ads').each((i, el) => {
-      $(el).remove(); // Remove elements with these ad classes
+    // Apply Cosmetic Filtering: Inject Styles for Hidden Ads
+    const { styles } = engine.getCosmeticsFilters({
+      url: parsedUrl.href,
+      hostname: parsedUrl.hostname,
+      domain: parsedUrl.hostname.replace(/^www\./, ''),
     });
 
-    // Fix inline CSS for asset paths (like images, fonts)
-    $('style').each((i, el) => {
-      let css = $(el).html();
-      css = css.replace(/url\(['"]?(\/[^)'"]+)['"]?\)/g, `url(${baseUrl}$1)`);
-      $(el).html(css);
-    });
+    if (styles) {
+      $('head').append(`<style>${styles}</style>`);
+    }
 
     // Set response headers and send the modified HTML back
     response.setHeader('Content-Type', 'text/html');
